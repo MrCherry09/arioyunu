@@ -20,6 +20,8 @@ var _buffer := 0.0
 func _ready() -> void:
 	_setup_inputs()
 	_spawn = global_position
+	# Aşağı inen hareketli platformlarda zeminden kopmasın
+	floor_snap_length = 10.0
 
 
 func _physics_process(delta: float) -> void:
@@ -52,6 +54,34 @@ func _physics_process(delta: float) -> void:
 
 	if global_position.y > fall_limit:
 		respawn()
+		return
+
+	for i in get_slide_collision_count():
+		var col := get_slide_collision(i)
+		var other := col.get_collider() as Node
+		if other == null:
+			continue
+		if other.is_in_group("hazard") or _is_hazard_tile(other, col):
+			respawn()
+			return
+		# Çöken platform gibi üstüne basılınca tepki veren şeyler
+		if col.get_normal().y < -0.5 and other.has_method("on_player_landed"):
+			other.on_player_landed()
+
+
+## TileSet'te "hazard" özel verisi işaretli bir tile'a mı çarptık?
+func _is_hazard_tile(other: Node, col: KinematicCollision2D) -> bool:
+	var layer := other as TileMapLayer
+	if layer == null or layer.tile_set == null:
+		return false
+	# Çarpışma noktasından tile'ın içine doğru biraz ilerleyip o hücreye bak
+	var point := col.get_position() - col.get_normal() * 2.0
+	var data := layer.get_cell_tile_data(layer.local_to_map(layer.to_local(point)))
+	return data != null and data.get_custom_data("hazard") == true
+
+
+func set_spawn(pos: Vector2) -> void:
+	_spawn = pos
 
 
 func respawn() -> void:

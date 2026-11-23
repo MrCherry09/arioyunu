@@ -1,0 +1,10 @@
+[gd_scene format=3]
+
+[ext_resource type="TileSet" path="res://tiles/tileset.tres" id="1_eyv7q"]
+[ext_resource type="Script" path="res://scripts/falling_platform.gd" id="2_rehgp"]
+
+[node name="FallingPlatform" type="TileMapLayer" unique_id=1709380026]
+tile_map_data = PackedByteArray(0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0)
+tile_set = ExtResource("1_eyv7q")
+use_kinematic_bodies = true
+script = ExtResource("2_rehgp")

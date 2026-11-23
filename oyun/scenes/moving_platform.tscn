@@ -1,0 +1,10 @@
+[gd_scene format=3]
+
+[ext_resource type="TileSet" path="res://tiles/tileset.tres" id="1_1tdcd"]
+[ext_resource type="Script" path="res://scripts/moving_platform.gd" id="2_mb26n"]
+
+[node name="MovingPlatform" type="TileMapLayer" unique_id=1219612037]
+tile_map_data = PackedByteArray(0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0)
+tile_set = ExtResource("1_1tdcd")
+use_kinematic_bodies = true
+script = ExtResource("2_mb26n")
