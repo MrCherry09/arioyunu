@@ -15,6 +15,7 @@ var gravity: float = ProjectSettings.get_setting("physics/2d/default_gravity")
 var _spawn: Vector2
 var _coyote := 0.0
 var _buffer := 0.0
+var jump_count = 0
 
 
 func _ready() -> void:
@@ -23,14 +24,21 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
+	
+	if jump_count > 1:
+		_buffer = jump_buffer
+		jump_count += 1
+
 	if not is_on_floor():
 		velocity.y += gravity * delta
 		_coyote -= delta
 	else:
 		_coyote = coyote_time
+		jump_count = 0
 
 	_buffer -= delta
-	if Input.is_action_just_pressed("jump"):
+	if Input.is_action_just_pressed("jump") and jump_count < 2:
+		jump_count += 1
 		_buffer = jump_buffer
 
 	if _buffer > 0.0 and _coyote > 0.0:

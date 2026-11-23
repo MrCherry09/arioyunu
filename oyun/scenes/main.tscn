@@ -1,55 +1,59 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://co14pfjwo20vw"]
 
-[ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
+[ext_resource type="Script" uid="uid://b4yp8bl6m01s0" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="PackedScene" path="res://scenes/platform.tscn" id="2_plat"]
 [ext_resource type="PackedScene" path="res://scenes/player.tscn" id="3_player"]
-[ext_resource type="Script" path="res://addons/phantom_camera/scripts/phantom_camera_host/phantom_camera_host.gd" id="4_host"]
-[ext_resource type="Script" path="res://addons/phantom_camera/scripts/phantom_camera/phantom_camera_2d.gd" id="5_pcam"]
+[ext_resource type="Script" uid="uid://bd046eokvcnu2" path="res://addons/phantom_camera/scripts/phantom_camera_host/phantom_camera_host.gd" id="4_host"]
+[ext_resource type="Script" uid="uid://bhexx6mj1xv3q" path="res://addons/phantom_camera/scripts/phantom_camera/phantom_camera_2d.gd" id="5_pcam"]
+[ext_resource type="Script" uid="uid://8umksf8e80fw" path="res://addons/phantom_camera/scripts/resources/tween_resource.gd" id="6_tefeu"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_goal"]
 size = Vector2(32, 48)
 
-[node name="Main" type="Node2D"]
+[sub_resource type="Resource" id="Resource_o6xl0"]
+script = ExtResource("6_tefeu")
+
+[node name="Main" type="Node2D" unique_id=1692489283]
 script = ExtResource("1_main")
 
-[node name="Level" type="Node2D" parent="."]
+[node name="Level" type="Node2D" parent="." unique_id=2095290712]
 
-[node name="Ground1" parent="Level" instance=ExtResource("2_plat")]
+[node name="Ground1" parent="Level" unique_id=14894136 instance=ExtResource("2_plat")]
 position = Vector2(-300, 500)
 size = Vector2(900, 60)
 
-[node name="Step1" parent="Level" instance=ExtResource("2_plat")]
+[node name="Step1" parent="Level" unique_id=1456672318 instance=ExtResource("2_plat")]
 position = Vector2(150, 380)
 size = Vector2(160, 24)
 
-[node name="Step2" parent="Level" instance=ExtResource("2_plat")]
+[node name="Step2" parent="Level" unique_id=2099163551 instance=ExtResource("2_plat")]
 position = Vector2(380, 280)
 size = Vector2(160, 24)
 
-[node name="Bridge" parent="Level" instance=ExtResource("2_plat")]
+[node name="Bridge" parent="Level" unique_id=683255349 instance=ExtResource("2_plat")]
 position = Vector2(620, 200)
 size = Vector2(200, 24)
 
-[node name="Ground2" parent="Level" instance=ExtResource("2_plat")]
+[node name="Ground2" parent="Level" unique_id=599938747 instance=ExtResource("2_plat")]
 position = Vector2(750, 500)
 size = Vector2(700, 60)
 
-[node name="Step3" parent="Level" instance=ExtResource("2_plat")]
+[node name="Step3" parent="Level" unique_id=2027732498 instance=ExtResource("2_plat")]
 position = Vector2(900, 380)
 size = Vector2(150, 24)
 
-[node name="Step4" parent="Level" instance=ExtResource("2_plat")]
+[node name="Step4" parent="Level" unique_id=349912807 instance=ExtResource("2_plat")]
 position = Vector2(1100, 280)
 size = Vector2(140, 24)
 
-[node name="Top" parent="Level" instance=ExtResource("2_plat")]
+[node name="Top" parent="Level" unique_id=1284173504 instance=ExtResource("2_plat")]
 position = Vector2(1300, 180)
 size = Vector2(200, 24)
 
-[node name="Goal" type="Area2D" parent="."]
+[node name="Goal" type="Area2D" parent="." unique_id=2031774466]
 position = Vector2(1420, 156)
 
-[node name="Visual" type="ColorRect" parent="Goal"]
+[node name="Visual" type="ColorRect" parent="Goal" unique_id=655798737]
 offset_left = -16.0
 offset_top = -24.0
 offset_right = 16.0
@@ -57,24 +61,28 @@ offset_bottom = 24.0
 mouse_filter = 2
 color = Color(0.3, 0.85, 0.4, 1)
 
-[node name="Shape" type="CollisionShape2D" parent="Goal"]
+[node name="Shape" type="CollisionShape2D" parent="Goal" unique_id=1138143869]
 shape = SubResource("RectangleShape2D_goal")
 
-[node name="Player" parent="." instance=ExtResource("3_player")]
+[node name="Player" parent="." unique_id=1359023180 instance=ExtResource("3_player")]
 position = Vector2(0, 450)
 
-[node name="Camera2D" type="Camera2D" parent="."]
+[node name="Camera2D" type="Camera2D" parent="." unique_id=1955411607]
 position = Vector2(0, 410)
 process_callback = 0
 
-[node name="PhantomCameraHost" type="Node" parent="Camera2D"]
+[node name="PhantomCameraHost" type="Node" parent="Camera2D" unique_id=740433544]
+process_priority = 300
+process_physics_priority = 300
 script = ExtResource("4_host")
 
-[node name="PlayerCam" type="Node2D" parent="." node_paths=PackedStringArray("follow_target")]
+[node name="PlayerCam" type="Node2D" parent="." unique_id=91500912 node_paths=PackedStringArray("follow_target")]
+top_level = true
 position = Vector2(0, 410)
 script = ExtResource("5_pcam")
 follow_mode = 5
 follow_target = NodePath("../Player")
+tween_resource = SubResource("Resource_o6xl0")
 follow_offset = Vector2(0, -40)
 follow_damping = true
 follow_damping_value = Vector2(0.12, 0.2)
@@ -87,16 +95,16 @@ lookahead_max_value = Vector2(140, 0)
 dead_zone_width = Vector2(0.08, 0.08)
 dead_zone_height = Vector2(0.25, 0.12)
 
-[node name="HUD" type="CanvasLayer" parent="."]
+[node name="HUD" type="CanvasLayer" parent="." unique_id=51238268]
 
-[node name="Help" type="Label" parent="HUD"]
+[node name="Help" type="Label" parent="HUD" unique_id=1149370840]
 offset_left = 16.0
 offset_top = 12.0
 offset_right = 700.0
 offset_bottom = 40.0
 text = "A/D veya ←/→: hareket    Space/W/↑: zıpla    R: yeniden başla"
 
-[node name="Message" type="Label" parent="HUD"]
+[node name="Message" type="Label" parent="HUD" unique_id=1187812393]
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
