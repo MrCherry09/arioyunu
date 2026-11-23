@@ -9,6 +9,8 @@ extends CharacterBody2D
 @export var jump_buffer := 0.12     ## Yere değmeden hemen önce basılan zıplamayı hatırlama süresi
 @export var fall_limit := 900.0     ## Bu y değerinin altına düşünce başa dön
 
+signal respawned
+
 var gravity: float = ProjectSettings.get_setting("physics/2d/default_gravity")
 var _spawn: Vector2
 var _coyote := 0.0
@@ -57,6 +59,7 @@ func respawn() -> void:
 	velocity = Vector2.ZERO
 	# Işınlanmayı ara karelerde süzülme olarak göstermesin
 	reset_physics_interpolation()
+	respawned.emit()
 
 
 static func _setup_inputs() -> void:

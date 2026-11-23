@@ -7,6 +7,8 @@ var _won := false
 func _ready() -> void:
 	message.hide()
 	$Goal.body_entered.connect(_on_goal_body_entered)
+	# Başa dönünce kamera haritayı kayarak geçmesin, anında ışınlansın
+	$Player.respawned.connect(func() -> void: $PlayerCam.teleport_position())
 
 
 func _unhandled_input(event: InputEvent) -> void:
