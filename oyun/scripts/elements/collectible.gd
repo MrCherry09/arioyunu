@@ -1,5 +1,5 @@
 extends Area2D
-## Toplanabilir bal damlası.
+## Toplanabilir melek tüyü.
 
 signal collected
 
@@ -9,12 +9,19 @@ var _vis: Polygon2D
 func _ready() -> void:
 	collision_layer = 0
 	_vis = Polygon2D.new()
-	var pts := PackedVector2Array()
-	for i in 6:
-		pts.append(Vector2.from_angle(TAU * i / 6.0 + PI / 6.0) * 12.0)
-	_vis.polygon = pts
-	_vis.color = Color(1.0, 0.78, 0.15)
+	# Eğik duran basit bir tüy: sivri uçlu yaprak biçimi + ortasında sap
+	_vis.polygon = PackedVector2Array([
+		Vector2(0, -16), Vector2(6, -8), Vector2(7, 2), Vector2(3, 10),
+		Vector2(0, 14), Vector2(-3, 10), Vector2(-7, 2), Vector2(-6, -8),
+	])
+	_vis.color = Color(0.97, 0.95, 0.85)
+	_vis.rotation = 0.5
 	add_child(_vis)
+	var quill := Line2D.new()
+	quill.width = 1.5
+	quill.default_color = Color(0.85, 0.7, 0.35)
+	quill.points = PackedVector2Array([Vector2(0, -12), Vector2(0, 18)])
+	_vis.add_child(quill)
 	var shape := CircleShape2D.new()
 	shape.radius = 14.0
 	var col := CollisionShape2D.new()

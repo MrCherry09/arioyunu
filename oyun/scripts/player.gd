@@ -1,6 +1,6 @@
 class_name Player
 extends CharacterBody2D
-## Platformer karakteri (arı).
+## Platformer karakteri.
 ## Yetenekler: yürüme, zıplama (coyote + tampon + değişken yükseklik), çift zıplama,
 ## dash, duvar kayma/zıplama, yere çakılma, süzülme, kayma/sürünme,
 ## tek yönlü platformdan inme. Ortamla etkileşim: zıplama yastığı, rüzgar,
@@ -36,6 +36,10 @@ extends CharacterBody2D
 @export var glide_fall_speed := 90.0    ## Space basılıyken en fazla düşme hızı
 @export var glide_wind_mult := 2.0      ## Süzülürken rüzgardan ne kadar fazla etkilenir
 @export var max_rise_in_wind := 380.0
+@export var wind_drift := 0.25          ## Yatay rüzgar kuvvetinin ne kadarı yürüme hızına eklenir
+
+@export_group("Kutu")
+@export var push_speed := 170.0         ## Kutu iterken yürüme hızı
 
 @export_group("Kayma")
 @export var slide_speed := 680.0
@@ -80,6 +84,13 @@ var _slide_dir := 1.0
 var _drop_timer := 0.0
 var _floor_body: Object = null
 var _winds: Array[Node] = []
+var _gliding := false
+
+## Diyalog sırasında true: oyuncu girdileri yok sayılır, karakter yavaşça durur
+var input_locked := false
+
+## Hikâye eşyaları: {"rope": 1, "wood": 3}
+var items: Dictionary = {}
 
 @onready var _visual: ColorRect = $Visual
 @onready var _col: CollisionShape2D = $Shape
@@ -87,7 +98,7 @@ var _shape: RectangleShape2D
 
 
 func _ready() -> void:
-	_setup_inputs()
+	GameInput.setup()
 	_spawn = global_position
 	# Kayarken boyutu değiştireceğiz; sahnedeki paylaşılan şekli bozmamak için kopyala
 	_shape = (_col.shape as RectangleShape2D).duplicate()
@@ -134,6 +145,13 @@ func remove_wind(zone: Node) -> void:
 # --- Fizik ---
 
 func _physics_process(delta: float) -> void:
+	if input_locked:
+		if not is_on_floor():
+			velocity.y += gravity * delta
+		velocity.x = move_toward(velocity.x, 0.0, friction * delta)
+		_finish_move(COLOR_NORMAL)
+		return
+
 	var on_floor := is_on_floor() and not _smashed_pound
 	_smashed_pound = false
 
@@ -225,23 +243,26 @@ func _physics_process(delta: float) -> void:
 	var wall_normal := get_wall_normal() if is_on_wall_only() else Vector2.ZERO
 	var wall_sliding := wall_normal != Vector2.ZERO and dir != 0.0 \
 			and signf(dir) == -signf(wall_normal.x) and velocity.y > 0.0
-	var gliding := false
+	var wind := _wind_force()
+	# Süzülme: Space basılı ve havada. Zıplamanın tepesine yaklaşınca ya da yukarı akımdayken
+	# başlar; başladıktan sonra Space bırakılana kadar sürer (akım yukarı itse bile kesilmez).
+	var gliding := not on_floor and not wall_sliding and Input.is_action_pressed("jump") \
+			and (_gliding or velocity.y > -60.0 or wind.y < 0.0)
 	if not on_floor:
 		velocity.y += gravity * delta
 		if wall_sliding:
 			velocity.y = minf(velocity.y, wall_slide_speed)
-		elif Input.is_action_pressed("jump") and velocity.y > -60.0:
-			gliding = true
+		elif gliding:
 			velocity.y = minf(velocity.y, glide_fall_speed)
 
 	# --- Rüzgar ---
-	var wind := _wind_force()
-	if wind != Vector2.ZERO:
-		var w := wind * (glide_wind_mult if gliding else 1.0)
-		if on_floor and w.y < 0.0:
-			w.y = 0.0  # yerde dururken titremesin
-		velocity += w * delta
-		if w.y < 0.0:
+	# Dikey: ivme olarak etki eder (yukarı akım). Yatay: yürüme hedef hızını kaydırır,
+	# böylece karşı rüzgarda yavaşlar, rüzgar yönünde hızlanır, dururken sürüklenirsin.
+	var wind_mult := glide_wind_mult if gliding else 1.0
+	var drift := wind.x * wind_mult * wind_drift
+	if wind.y != 0.0 and not (on_floor and wind.y < 0.0):  # yerde dururken titremesin
+		velocity.y += wind.y * wind_mult * delta
+		if wind.y < 0.0:
 			velocity.y = maxf(velocity.y, -max_rise_in_wind)
 
 	# --- Zıplama: yer (coyote) > duvar > hava ---
@@ -277,10 +298,11 @@ func _physics_process(delta: float) -> void:
 			if f != null:
 				grip = f
 		if dir != 0.0:
-			velocity.x = move_toward(velocity.x, dir * speed, acceleration * grip * delta)
+			velocity.x = move_toward(velocity.x, dir * speed + drift, acceleration * grip * delta)
 		else:
-			velocity.x = move_toward(velocity.x, 0.0, friction * grip * delta)
+			velocity.x = move_toward(velocity.x, drift, friction * grip * delta)
 
+	_gliding = gliding
 	var color := COLOR_NORMAL
 	if wall_sliding:
 		color = COLOR_WALL
@@ -301,6 +323,12 @@ func _finish_move(color: Color) -> void:
 			continue
 		if c.get_normal().y < -0.7:
 			_floor_body = body
+		# Kutuyu yandan it (üstündeyken değil)
+		if absf(c.get_normal().x) > 0.7 and body.has_method("push"):
+			var push_dir := -signf(c.get_normal().x)
+			body.push(push_dir * push_speed)
+			if _dash_timer <= 0.0:
+				velocity.x = push_dir * push_speed  # kutuya takılıp durmasın, onunla birlikte ilerlesin
 		if is_attacking() and body.has_method("smash"):
 			body.smash()
 			if _pounding:
@@ -364,22 +392,3 @@ func respawn() -> void:
 	# Işınlanmayı ara karelerde süzülme olarak göstermesin
 	reset_physics_interpolation()
 	respawned.emit()
-
-
-static func _setup_inputs() -> void:
-	var map := {
-		"move_left": [KEY_A, KEY_LEFT],
-		"move_right": [KEY_D, KEY_RIGHT],
-		"jump": [KEY_SPACE, KEY_W, KEY_UP],
-		"down": [KEY_S, KEY_DOWN],
-		"dash": [KEY_SHIFT, KEY_K],
-		"restart": [KEY_R],
-	}
-	for action: String in map:
-		if InputMap.has_action(action):
-			continue
-		InputMap.add_action(action)
-		for key: Key in map[action]:
-			var ev := InputEventKey.new()
-			ev.physical_keycode = key
-			InputMap.action_add_event(action, ev)
