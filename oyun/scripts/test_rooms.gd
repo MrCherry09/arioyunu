@@ -17,6 +17,7 @@ const Enemy := preload("res://scripts/elements/enemy.gd")
 const Collectible := preload("res://scripts/elements/collectible.gd")
 const Checkpoint := preload("res://scripts/elements/checkpoint.gd")
 const RoomExit := preload("res://scripts/elements/room_exit.gd")
+const PauseMenuScene := preload("res://scenes/ui/pause_menu.tscn")
 
 const STRIDE := 2400.0     ## Odalar arası yatay mesafe (en geniş odadan büyük olmalı)
 const FLOOR_Y := 640.0     ## Zeminin üst yüzeyi
@@ -67,6 +68,7 @@ func _ready() -> void:
 	player.respawned.connect(_on_player_respawned)
 	_make_camera()
 	_make_hud()
+	_add_pause_menu()
 	_go_to_room(clampi(_current, 0, _rooms.size() - 1))
 
 
@@ -566,10 +568,21 @@ func _hud_label(parent: Node, pos: Vector2, font_size: int) -> Label:
 	return l
 
 
+## Pause menü sahnesini CanvasLayer olarak sahneye ekler.
+func _add_pause_menu() -> void:
+	var layer := CanvasLayer.new()
+	layer.layer = 100   # HUD'un üstünde
+	layer.process_mode = Node.PROCESS_MODE_ALWAYS
+	add_child(layer)
+	var pm := PauseMenuScene.instantiate()
+	layer.add_child(pm)
+
+
 static func _setup_inputs() -> void:
 	var map := {
 		"next_room": [KEY_E, KEY_PAGEDOWN],
 		"prev_room": [KEY_Q, KEY_PAGEUP],
+		"pause": [KEY_ESCAPE],
 	}
 	for action: String in map:
 		if InputMap.has_action(action):
