@@ -101,6 +101,7 @@ var _shape: RectangleShape2D
 
 func _ready() -> void:
 	GameInput.setup()
+	add_to_group("player")
 	_spawn = global_position
 	_make_sprite()
 	# Kayarken boyutu değiştireceğiz; sahnedeki paylaşılan şekli bozmamak için kopyala

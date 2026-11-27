@@ -13,6 +13,11 @@ var _t := 0.0
 func _ready() -> void:
 	add_to_group("story_npcs")  # oda girişinde sıfırlanacaklar
 	collision_layer = 0
+	if template.is_empty():  # sahneye konan eşyalar görünümlerini kimliklerinden bulur
+		var lk := PixelArt.look(item_id)
+		if not lk.is_empty():
+			template = lk[0]
+			palette = lk[1]
 	_sprite = PixelArt.sprite(template, palette)
 	add_child(_sprite)
 	var shape := RectangleShape2D.new()

@@ -28,6 +28,11 @@ const VOICES := {
 	"CHILD":      {"f0": 410.0, "dur": 0.06,  "vib": [0.0, 0.0],   "breath": 0.0,  "sweep": 0.03,  "vol": -10.0},
 	"CLIMBER":    {"f0": 150.0, "dur": 0.075, "vib": [13.0, 0.04], "breath": 0.08, "sweep": -0.02, "vol": -8.0},
 	"SPIRIT":     {"f0": 260.0, "dur": 0.11,  "vib": [3.0, 0.02],  "breath": 0.35, "sweep": 0.0,   "vol": -12.0},
+	"FARMER":     {"f0": 275.0, "dur": 0.07,  "vib": [0.0, 0.0],   "breath": 0.0,  "sweep": 0.02,  "vol": -9.0},
+	"SHEPHERD":   {"f0": 135.0, "dur": 0.085, "vib": [4.0, 0.02],  "breath": 0.04, "sweep": -0.03, "vol": -8.0},
+	"MILLER":     {"f0": 118.0, "dur": 0.09,  "vib": [0.0, 0.0],   "breath": 0.0,  "sweep": -0.02, "vol": -8.0},
+	"MINER":      {"f0": 160.0, "dur": 0.075, "vib": [0.0, 0.0],   "breath": 0.05, "sweep": -0.04, "vol": -8.0},
+	"STONE":      {"f0": 95.0,  "dur": 0.12,  "vib": [2.0, 0.03],  "breath": 0.3,  "sweep": 0.0,   "vol": -14.0},
 	"GATEKEEPER": {"f0": 80.0,  "dur": 0.11,  "vib": [0.0, 0.0],   "breath": 0.03, "sweep": -0.05, "vol": -6.0},
 }
 const DEFAULT_VOICE := {"f0": 200.0, "dur": 0.07, "vib": [0.0, 0.0], "breath": 0.0, "sweep": 0.0, "vol": -9.0}

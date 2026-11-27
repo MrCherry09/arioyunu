@@ -329,6 +329,214 @@ const FENER := [".k.", "kyk", "kyk", ".k."]
 const FENER_PAL := {"k": Color(0.3, 0.25, 0.2), "y": Color(1.0, 0.85, 0.4)}
 
 
+# --- Level NPC'leri ve etkileşimli nesneler ---
+
+const SHEPHERD := [
+	"...yyyyyy...",
+	"..yyyyyyyy..",
+	".yyyyyyyyyy.",
+	"...ssssss...",
+	"...sesses...",
+	"...ssssss...",
+	"....bbbb....",
+	"..gggggggg..",
+	".gggggggggg.",
+	".sggggggggs.",
+	"..gggggggg..",
+	"..gggggggg..",
+	"..pppppppp..",
+	"..pp....pp..",
+	"..kk....kk..",
+]
+const SHEPHERD_PAL := {
+	"y": Color8(0xe6, 0xc0, 0x68), "s": Color8(0xf5, 0xde, 0xce), "e": Color8(0x18, 0x14, 0x25),
+	"b": Color8(0x87, 0x59, 0x37), "g": Color8(0x55, 0x7d, 0x42), "p": Color8(0x5c, 0x4c, 0x37),
+	"k": Color8(0x3d, 0x30, 0x28),
+}
+
+const MILLER := [
+	"...wwwwww...",
+	"..wwwwwwww..",
+	"...ssssss...",
+	"...sesses...",
+	"...ssssss...",
+	"...smmmms...",
+	"..rrrrrrrr..",
+	".rrwwwwwwrr.",
+	".srwwwwwwrs.",
+	"..rwwwwwwr..",
+	"..rwwwwwwr..",
+	"..pppppppp..",
+	"..pp....pp..",
+	"..kk....kk..",
+]
+const MILLER_PAL := {
+	"w": Color8(0xf2, 0xee, 0xe6), "s": Color8(0xf0, 0xcf, 0xb5), "e": Color8(0x18, 0x14, 0x25),
+	"m": Color8(0x5c, 0x36, 0x22), "r": Color8(0x8f, 0x38, 0x42), "p": Color8(0x3d, 0x30, 0x28),
+	"k": Color8(0x2d, 0x1f, 0x36),
+}
+
+const FARMER := [
+	"...ffffff...",
+	"..ffffffff..",
+	"..fssssssf..",
+	"...sesses...",
+	"...ssssss...",
+	"....ssss....",
+	"..oooooooo..",
+	".oooooooooo.",
+	".soooooooos.",
+	"..oooooooo..",
+	"..oooooooo..",
+	"..oooooooo..",
+	"...kk..kk...",
+]
+const FARMER_PAL := {
+	"f": Color8(0xbf, 0x43, 0x43), "s": Color8(0xe8, 0xc0, 0xa0), "e": Color8(0x18, 0x14, 0x25),
+	"o": Color8(0xbf, 0x8e, 0x43), "k": Color8(0x3d, 0x30, 0x28),
+}
+
+const MINER := [
+	"...yyyyyy...",
+	"..yyyyLyyy..",
+	"..yyyyyyyy..",
+	"...ssssss...",
+	"...sesses...",
+	"...ssssss...",
+	"...bbbbbb...",
+	"..cccccccc..",
+	".cccccccccc.",
+	".sccccccccs.",
+	"..cccccccc..",
+	"..pppppppp..",
+	"..pp....pp..",
+	"..kk....kk..",
+]
+const MINER_PAL := {
+	"y": Color8(0xe6, 0xc0, 0x68), "L": Color8(0xff, 0xff, 0xd0), "s": Color8(0xe0, 0xb8, 0x98),
+	"e": Color8(0x18, 0x14, 0x25), "b": Color8(0x3d, 0x30, 0x28), "c": Color8(0x57, 0x67, 0x97),
+	"p": Color8(0x33, 0x3d, 0x58), "k": Color8(0x23, 0x2a, 0x3c),
+}
+
+const LAMB := [
+	"...wwwwww...",
+	"..wwwwwwwwhh",
+	".wwwwwwwwwhe",
+	".wwwwwwwwwhh",
+	"..wwwwwwww..",
+	"..k.k..k.k..",
+]
+const LAMB_PAL := {
+	"w": Color8(0xf5, 0xf0, 0xea), "h": Color8(0x3d, 0x30, 0x28), "e": Color8(0xff, 0xff, 0xff),
+	"k": Color8(0x3d, 0x30, 0x28),
+}
+
+const CHICK := [
+	"...yy...",
+	"..yyyy..",
+	".yyeyyo.",
+	".yyyyy..",
+	"..yyy...",
+	"..o.o...",
+]
+const CHICK_PAL := {"y": Color8(0xff, 0xe0, 0x70), "e": Color8(0x18, 0x14, 0x25), "o": Color8(0xe6, 0x80, 0x30)}
+
+## Hikâye taşı: üstünde parlayan rün
+const STONE := [
+	"...gggg...",
+	"..gggggg..",
+	".gggggggg.",
+	".ggrggrgg.",
+	".gggrrggg.",
+	".ggrggrgg.",
+	".gggggggg.",
+	"gggggggggg",
+	"gggggggggg",
+]
+const STONE_PAL := {"g": Color8(0x7e, 0x84, 0xae), "r": Color8(0xf2, 0xd6, 0x7e)}
+
+const BELL := [
+	"...kk...",
+	"...kk...",
+	"..yyyy..",
+	".yyyyyy.",
+	".yyyyyy.",
+	".yyyyyy.",
+	"yyyyyyyy",
+	"...yy...",
+]
+const BELL_PAL := {"y": Color8(0xe6, 0xc0, 0x68), "k": Color8(0x3d, 0x30, 0x28)}
+
+const LANTERN := [
+	"..kk..",
+	".kkkk.",
+	"k....k",
+	"k.ll.k",
+	"k.ll.k",
+	"k....k",
+	".kkkk.",
+	"..kk..",
+]
+const LANTERN_PAL := {"k": Color8(0x5c, 0x4c, 0x37), "l": Color8(0x3d, 0x30, 0x28)}
+const LANTERN_ON_PAL := {"k": Color8(0xbf, 0x8e, 0x43), "l": Color8(0xff, 0xf0, 0xb5)}
+
+const NEST := [
+	"k..........k",
+	"kkk......kkk",
+	".kkkkkkkkkk.",
+	"..kkkkkkkk..",
+]
+const NEST_PAL := {"k": Color8(0x87, 0x59, 0x37)}
+
+## Kimliğe göre görünüm: sahnelere konan NPC/eşya/nesneler görünümlerini buradan bulur
+## ([şablon, palet]). Yeni bir karakter eklemek için buraya bir satır ekle.
+static func look(id: String) -> Array:
+	match id:
+		"granny":
+			return [NINE, NINE_PAL]
+		"monk":
+			return [KESIS, KESIS_PAL]
+		"bird":
+			return [KUS, KUS_PAL]
+		"child":
+			return [COCUK, COCUK_PAL]
+		"climber":
+			return [DAGCI, DAGCI_PAL]
+		"spirit":
+			return [RUH, RUH_PAL]
+		"shepherd":
+			return [SHEPHERD, SHEPHERD_PAL]
+		"miller":
+			return [MILLER, MILLER_PAL]
+		"farmer":
+			return [FARMER, FARMER_PAL]
+		"miner":
+			return [MINER, MINER_PAL]
+		"lamb":
+			return [LAMB, LAMB_PAL]
+		"chick":
+			return [CHICK, CHICK_PAL]
+		"stone":
+			return [STONE, STONE_PAL]
+		"bell":
+			return [BELL, BELL_PAL]
+		"lantern":
+			return [LANTERN, LANTERN_PAL]
+		"lantern_on":
+			return [LANTERN, LANTERN_ON_PAL]
+		"nest":
+			return [NEST, NEST_PAL]
+		"rope":
+			return [ROPE, ROPE_PAL]
+		"wood":
+			return [ODUN, ODUN_PAL]
+		"well":
+			return [KUYU, KUYU_PAL]
+		"angel":
+			return [MELEK, MELEK_PAL]
+	return []
+
+
 ## Tileset'lerle aynı stil için tüm sprite'lara bu renkte 1 piksellik dış kontur çizilir
 ## (Green Valley'nin en koyu rengi).
 const OUTLINE := Color8(0x18, 0x14, 0x25)

@@ -80,9 +80,9 @@ var _help: Label
 var _pad_help := false
 
 const HELP_KEYS := "A/D move · Space jump (hold: glide) · Shift dash · " \
-		+ "S: slide / ground pound · S+Space: drop down · F talk/use · Q/E room · R reset"
+		+ "S: slide / pound · S+Space: drop · F talk/use · Q/E room · R reset · Esc pause"
 const HELP_PAD := "Left stick move · A jump (hold: glide) · X/RT dash · " \
-		+ "Down: slide / ground pound · Down+A: drop down · Y talk/use · LB/RB room · Select reset"
+		+ "Down: slide / pound · Down+A: drop · Y talk/use · LB/RB room · Select reset · Start pause"
 
 
 func _ready() -> void:
@@ -1109,6 +1109,8 @@ func _go_to_room(i: int) -> void:
 	_cam.limit_top = int(BOTTOM - def["h"])
 	_cam.limit_bottom = int(BOTTOM)
 	_title.text = "%d/%d  %s" % [i + 1, _rooms.size(), def["title"]]
+	# Tüy sayacı sadece tüy olan odada görünsün
+	_feather_label.visible = _room_feathers_left.has(i)
 	_desc.text = def["desc"]
 	await get_tree().physics_frame
 	_cam.reset_smoothing()

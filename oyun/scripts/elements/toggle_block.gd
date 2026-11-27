@@ -6,6 +6,9 @@ extends StaticBody2D
 @export var channel := ""
 @export var solid_at_start := true
 @export var color := Color(0.9, 0.3, 0.35)
+## "toggle": şalter her çekildiğinde katı/hayalet değişir.
+## "hold": kanal açık olduğu sürece solid_at_start'ın tersi olur (ör. plaka basılıyken inen köprü).
+@export_enum("toggle", "hold") var mode := "toggle"
 
 var _solid := true
 var _want := true
@@ -46,12 +49,13 @@ func _ready() -> void:
 	_apply(solid_at_start)
 
 
-func on_channel(_ch: String, _on: bool) -> void:
-	pass
+func on_channel(ch: String, on: bool) -> void:
+	if mode == "hold" and ch == channel:
+		_want = (not solid_at_start) if on else solid_at_start
 
 
 func on_toggle(ch: String) -> void:
-	if ch == channel:
+	if mode == "toggle" and ch == channel:
 		_want = not _want
 
 

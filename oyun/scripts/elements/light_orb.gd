@@ -258,6 +258,10 @@ func _frame_sprite(tex: Texture2D, frames: int, tint: Color) -> Sprite2D:
 
 ## Kısa, piksel ızgarasına oturan kamera sarsıntısı
 func _shake_camera() -> void:
+	# Ayarlardan "Screen Shake" kapatıldıysa sarsma
+	var settings := get_node_or_null("/root/SettingsManager")
+	if settings and not settings.get_setting("screenshake"):
+		return
 	var cam := get_viewport().get_camera_2d()
 	if cam == null:
 		return

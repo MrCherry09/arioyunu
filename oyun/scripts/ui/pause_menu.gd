@@ -16,10 +16,13 @@ var _btn_container: VBoxContainer
 var _options_panel: Control = null
 var _overlay: ColorRect
 var _panel: PanelContainer
+var _resume_btn: Button
+var _settings_btn: Button
 
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	GameInput.setup()  # "pause" ve menü tuşları (kolda Start, A, B) tanımlı olsun
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	anchor_right = 1.0
 	anchor_bottom = 1.0
@@ -50,6 +53,7 @@ func pause() -> void:
 	_close_options()
 	visible = true
 	get_tree().paused = true
+	_resume_btn.grab_focus.call_deferred()  # kol/klavye ile gezinme
 
 
 ## Menüyü kapatıp oyuna devam eder.
@@ -113,7 +117,7 @@ func _build_ui() -> void:
 
 	# Başlık
 	var title := Label.new()
-	title.text = "⏸  Paused"
+	title.text = "Paused"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 30)
 	vbox.add_child(title)
@@ -128,8 +132,8 @@ func _build_ui() -> void:
 	_btn_container.alignment = BoxContainer.ALIGNMENT_CENTER
 	vbox.add_child(_btn_container)
 
-	_add_button("Resume", resume)
-	_add_button("Settings", _on_settings)
+	_resume_btn = _add_button("Resume", resume)
+	_settings_btn = _add_button("Settings", _on_settings)
 	_add_button("Main Menu", _on_main_menu)
 	_add_button("Quit", _on_quit)
 
@@ -157,6 +161,7 @@ func _on_settings() -> void:
 
 func _on_options_back() -> void:
 	_close_options()
+	_settings_btn.grab_focus.call_deferred()
 
 
 func _close_options() -> void:

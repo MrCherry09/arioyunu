@@ -43,6 +43,7 @@ func _ready() -> void:
 
 	_build_ui()
 	_sync_from_settings()
+	_master_slider.grab_focus.call_deferred()  # kol/klavye ile gezinme
 
 	# Ayarlar dışarıdan değişirse senkronize ol
 	var sm := _get_settings()
@@ -116,10 +117,10 @@ func _build_ui() -> void:
 	panel.add_child(vbox)
 
 	# ── Başlık ──
-	_section_title(vbox, "⚙  Settings")
+	_section_title(vbox, "Settings")
 
 	# ── Ses ──
-	_section_header(vbox, "🔊  Audio")
+	_section_header(vbox, "Audio")
 	_master_slider = _add_slider(vbox, "Master Volume", 0, 100)
 	_master_slider.value_changed.connect(func(v: float) -> void:
 		_get_settings().set_setting("audio_master", v))
@@ -131,7 +132,7 @@ func _build_ui() -> void:
 		_get_settings().set_setting("audio_sfx", v))
 
 	# ── Görüntü ──
-	_section_header(vbox, "🖥  Display")
+	_section_header(vbox, "Display")
 	_fullscreen_check = _add_check(vbox, "Fullscreen")
 	_fullscreen_check.toggled.connect(func(on: bool) -> void:
 		_get_settings().set_setting("fullscreen", on))
@@ -155,7 +156,7 @@ func _build_ui() -> void:
 		_get_settings().set_setting("resolution_scale", v))
 
 	# ── Oynanış ──
-	_section_header(vbox, "🎮  Gameplay")
+	_section_header(vbox, "Gameplay")
 	_screenshake_check = _add_check(vbox, "Screen Shake")
 	_screenshake_check.toggled.connect(func(on: bool) -> void:
 		_get_settings().set_setting("screenshake", on))

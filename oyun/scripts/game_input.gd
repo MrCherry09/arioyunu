@@ -45,6 +45,21 @@ static func setup() -> void:
 				ev = key
 			InputMap.action_add_event(action, ev)
 
+	# Menüler Godot'nun hazır ui_* komutlarını kullanır. Bu sürümde bunlarda kolun A/B tuşları
+	# yok: kolla menüde gezilebiliyor ama hiçbir düğmeye basılamıyordu. Eksikleri ekle.
+	var ui := {
+		"ui_accept": [_btn(JOY_BUTTON_A)],
+		"ui_cancel": [_btn(JOY_BUTTON_B)],
+		"ui_up": [_btn(JOY_BUTTON_DPAD_UP), _axis(JOY_AXIS_LEFT_Y, -1.0)],
+		"ui_down": [_btn(JOY_BUTTON_DPAD_DOWN), _axis(JOY_AXIS_LEFT_Y, 1.0)],
+		"ui_left": [_btn(JOY_BUTTON_DPAD_LEFT), _axis(JOY_AXIS_LEFT_X, -1.0)],
+		"ui_right": [_btn(JOY_BUTTON_DPAD_RIGHT), _axis(JOY_AXIS_LEFT_X, 1.0)],
+	}
+	for action: String in ui:
+		for ev: InputEvent in ui[action]:
+			if not InputMap.action_has_event(action, ev):
+				InputMap.action_add_event(action, ev)
+
 
 static func _btn(button: JoyButton) -> InputEventJoypadButton:
 	var ev := InputEventJoypadButton.new()

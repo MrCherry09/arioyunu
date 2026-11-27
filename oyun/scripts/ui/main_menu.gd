@@ -2,7 +2,7 @@ extends Control
 ## MainMenu — Oyunun açılış ekranı.
 ##
 ## Oyun başlatıldığında gösterilen ana menü. Düğmeler:
-##   • Play       → test_rooms sahnesine geçer
+##   • Play       → Level 1 (Orman) başlar
 ##   • Continue   → (kayıt varsa) kayıttan devam eder
 ##   • Settings   → OptionsMenu panelini açar
 ##   • Quit       → uygulamayı kapatır
@@ -12,11 +12,15 @@ const OptionsMenu := preload("res://scripts/ui/options_menu.gd")
 var _btn_container: VBoxContainer
 var _options_panel: Control = null
 var _center: CenterContainer
+var _settings_btn: Button
 
 
 func _ready() -> void:
 	get_tree().paused = false
+	GameInput.setup()  # menüde de kol tuşları tanımlı olsun (A: onay, B: geri)
 	_build_ui()
+	# Kol/klavye ile gezinebilmek için ilk düğme seçili başlasın
+	_btn_container.get_child(0).grab_focus.call_deferred()
 
 
 # ── UI Oluşturucu ────────────────────────────────────────────────────
@@ -48,7 +52,7 @@ func _build_ui() -> void:
 
 	# ── Başlık ──
 	var title := Label.new()
-	title.text = "🐝  Bee Game"
+	title.text = "From the Heavens"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 52)
 	vbox.add_child(title)
@@ -76,7 +80,7 @@ func _build_ui() -> void:
 	if has_save:
 		_add_button("Continue", _on_continue)
 
-	_add_button("Settings", _on_settings)
+	_settings_btn = _add_button("Settings", _on_settings)
 	_add_button("Quit", _on_quit)
 
 	# ── Alt bilgi ──
@@ -108,7 +112,7 @@ func _on_play() -> void:
 	if has_node("/root/GameManager"):
 		get_node("/root/GameManager").start_game()
 	else:
-		get_tree().change_scene_to_file("res://scenes/test_rooms.tscn")
+		get_tree().change_scene_to_file("res://scenes/levels/level_1_forest.tscn")
 
 
 func _on_continue() -> void:
@@ -117,7 +121,7 @@ func _on_continue() -> void:
 		gm.load_game()
 		gm.start_game()
 	else:
-		get_tree().change_scene_to_file("res://scenes/test_rooms.tscn")
+		get_tree().change_scene_to_file("res://scenes/levels/level_1_forest.tscn")
 
 
 func _on_settings() -> void:
@@ -134,6 +138,7 @@ func _on_options_back() -> void:
 		_options_panel.queue_free()
 		_options_panel = null
 	_center.show()
+	_settings_btn.grab_focus.call_deferred()
 
 
 func _on_quit() -> void:

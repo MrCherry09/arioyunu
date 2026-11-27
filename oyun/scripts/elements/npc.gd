@@ -10,6 +10,7 @@ signal action(npc: Node, action_name: String)
 @export var npc_id := ""
 @export var hop := false      ## Kuş gibi ara sıra zıplasın mı
 @export var shiver := false   ## Üşüyen gibi titresin mi
+@export var look := ""        ## Görünüm kimliği (boşsa npc_id); bkz. PixelArt.look()
 
 var tree: Dictionary = {}
 var tree_provider: Callable   ## func(npc) -> Dictionary
@@ -27,6 +28,12 @@ var _talked := false
 func _ready() -> void:
 	add_to_group("story_npcs")
 	collision_layer = 0
+	# Sahneye konan NPC'ler (leveller) görünümlerini kimliklerinden bulur
+	if template.is_empty():
+		var lk := PixelArt.look(look if look != "" else npc_id)
+		if not lk.is_empty():
+			template = lk[0]
+			palette = lk[1]
 	sprite = PixelArt.sprite(template, palette)
 	add_child(sprite)
 

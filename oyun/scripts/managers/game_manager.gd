@@ -26,7 +26,7 @@ const SAVE_PATH := "user://savegame.json"
 var game_data: Dictionary = {
 	"version": 1,                     # Kayıt formatı sürümü
 	"last_room": 0,                   # Son bulunulan oda
-	"honey_collected": 0,             # Toplanan bal
+	"feathers_collected": 0,          # Toplanan melek tüyü
 	"total_play_time_sec": 0.0,       # Toplam oynama süresi
 	"checkpoints_reached": [],        # Ulaşılan kontrol noktaları
 }
@@ -112,6 +112,12 @@ func go_to_main_menu() -> void:
 	change_scene("res://scenes/ui/main_menu.tscn")
 
 
-## Test odaları sahnesine geçer (oyuna başla).
+## Oyuna başlar: Level 1 (Orman), yükleme ekranı üzerinden (bkz. GameFlow).
+## Test odalarına normal akıştan girilmez; gizli debug tuşu: Ctrl+Shift+T.
 func start_game() -> void:
-	change_scene("res://scenes/test_rooms.tscn")
+	var flow := get_node_or_null("/root/GameFlow")
+	if flow:
+		get_tree().paused = false
+		flow.start_new_game()
+	else:
+		change_scene("res://scenes/levels/level_1_forest.tscn")

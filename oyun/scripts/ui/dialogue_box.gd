@@ -22,6 +22,11 @@ const SPEAKER_COLORS := {
 	"CLIMBER": Color(1.0, 0.6, 0.3),
 	"SPIRIT": Color(0.75, 0.9, 1.0),
 	"GATEKEEPER": Color(1.0, 0.95, 0.75),
+	"FARMER": Color(0.95, 0.7, 0.4),
+	"SHEPHERD": Color(0.6, 0.85, 0.45),
+	"MILLER": Color(0.95, 0.9, 0.8),
+	"MINER": Color(0.95, 0.8, 0.35),
+	"STONE": Color(0.75, 0.8, 1.0),
 }
 
 const OPT_ON := Color(1.0, 0.9, 0.5)
