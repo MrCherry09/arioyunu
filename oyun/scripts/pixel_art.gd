@@ -138,6 +138,104 @@ const DAGCI_PAL := {
 	"p": Color(0.25, 0.28, 0.35), "k": Color(0.2, 0.15, 0.1),
 }
 
+## Oyuncu: sıradan bir yolcu (kimliği sonra belirlenecek). Green Valley paletinden renkler:
+## kahverengi saç, kırmızı atkı, yeşil pelerin. Kareler: duruş, iki yürüme, zıplama, kayma.
+const PLAYER_PAL := {
+	"h": Color8(0x5c, 0x36, 0x22), "s": Color8(0xf5, 0xde, 0xce), "e": Color8(0x18, 0x14, 0x25),
+	"r": Color8(0xbf, 0x43, 0x43), "c": Color8(0x55, 0x7d, 0x42), "d": Color8(0x2b, 0x47, 0x2b),
+	"p": Color8(0x3d, 0x30, 0x28), "b": Color8(0x2d, 0x1f, 0x36),
+}
+const PLAYER_IDLE := [
+	"....hhhh....",
+	"...hhhhhh...",
+	"...hsssshh..",
+	"...sesses...",
+	"...ssssss...",
+	"....ssss....",
+	"..rrrrrrr...",
+	"..cccccccc..",
+	".cccccccccc.",
+	".sccccccccs.",
+	"..cdccccdc..",
+	"..cccccccc..",
+	"...pppppp...",
+	"...pp..pp...",
+	"...pp..pp...",
+	"...bb..bb...",
+]
+const PLAYER_WALK_1 := [
+	"....hhhh....",
+	"...hhhhhh...",
+	"...hsssshh..",
+	"...sesses...",
+	"...ssssss...",
+	"....ssss....",
+	"..rrrrrrr...",
+	"..cccccccc..",
+	".cccccccccc.",
+	".sccccccccs.",
+	"..cdccccdc..",
+	"..cccccccc..",
+	"...pppppp...",
+	"..pp....pp..",
+	".pp......pp.",
+	".bb......bb.",
+]
+const PLAYER_WALK_2 := [
+	"....hhhh....",
+	"...hhhhhh...",
+	"...hsssshh..",
+	"...sesses...",
+	"...ssssss...",
+	"....ssss....",
+	"..rrrrrrr...",
+	"..cccccccc..",
+	".cccccccccc.",
+	".sccccccccs.",
+	"..cdccccdc..",
+	"..cccccccc..",
+	"...pppppp...",
+	"....pppp....",
+	"....pp.p....",
+	"....bb.b....",
+]
+const PLAYER_JUMP := [
+	"....hhhh....",
+	"...hhhhhh...",
+	"s..hsssshh.s",
+	"s..sesses..s",
+	"c..ssssss..c",
+	"c...ssss...c",
+	"ccrrrrrrr.cc",
+	".cccccccccc.",
+	"..cccccccc..",
+	"..cccccccc..",
+	"..cdccccdc..",
+	"..cccccccc..",
+	"...pppppp...",
+	"..pp....pp..",
+	"..bb....bb..",
+	"............",
+]
+const PLAYER_SLIDE := [
+	"............",
+	"............",
+	"............",
+	"............",
+	"............",
+	"............",
+	"............",
+	"............",
+	"......hhhh..",
+	"....rrhhhhh.",
+	"..cccrsssseh",
+	".ccccccssss.",
+	"cccccccccs..",
+	"ccdccccdc...",
+	".pppppppp...",
+	"bb....bbbb..",
+]
+
 ## Kayıp ruh: soluk, yarı saydam, alt kısmı dalgalı
 const RUH := [
 	"...wwww...",
@@ -231,17 +329,37 @@ const FENER := [".k.", "kyk", "kyk", ".k."]
 const FENER_PAL := {"k": Color(0.3, 0.25, 0.2), "y": Color(1.0, 0.85, 0.4)}
 
 
-static func texture(rows: Array, palette: Dictionary) -> ImageTexture:
+## Tileset'lerle aynı stil için tüm sprite'lara bu renkte 1 piksellik dış kontur çizilir
+## (Green Valley'nin en koyu rengi).
+const OUTLINE := Color8(0x18, 0x14, 0x25)
+
+
+## Şablondan doku. Etrafına 1 piksel boşluk bırakılır ve (outline açıksa) dış kontur çizilir;
+## boşluk simetrik olduğu için sprite'ın merkezi ve ayak hizası değişmez.
+static func texture(rows: Array, palette: Dictionary, outline := true) -> ImageTexture:
 	var w := 0
 	for r: String in rows:
 		w = maxi(w, r.length())
-	var img := Image.create(w, rows.size(), false, Image.FORMAT_RGBA8)
+	var img := Image.create(w + 2, rows.size() + 2, false, Image.FORMAT_RGBA8)
 	for y in rows.size():
 		var row: String = rows[y]
 		for x in row.length():
 			var ch := row[x]
 			if ch != "." and palette.has(ch):
-				img.set_pixel(x, y, palette[ch])
+				img.set_pixel(x + 1, y + 1, palette[ch])
+	if outline:
+		var src := img.duplicate()
+		for y in img.get_height():
+			for x in img.get_width():
+				if src.get_pixel(x, y).a > 0.0:
+					continue
+				for d: Vector2i in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+					var nx := x + d.x
+					var ny := y + d.y
+					if nx >= 0 and ny >= 0 and nx < img.get_width() and ny < img.get_height() \
+							and src.get_pixel(nx, ny).a > 0.5:
+						img.set_pixel(x, y, OUTLINE)
+						break
 	return ImageTexture.create_from_image(img)
 
 

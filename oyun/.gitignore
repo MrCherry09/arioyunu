@@ -1,3 +1,7 @@
 # Godot 4+ specific ignores
 .godot/
 /android/
+
+# Winter Tileset lisansı yeniden dağıtıma izin vermiyor (bkz. assets/tilesets/winter/LICENSE.txt)
+assets/tilesets/winter/*
+!assets/tilesets/winter/LICENSE.txt

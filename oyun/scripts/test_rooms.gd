@@ -45,6 +45,13 @@ const C_BELT := Color(0.45, 0.45, 0.3)
 const C_RED := Color(0.9, 0.3, 0.35)
 const C_BLUE := Color(0.3, 0.5, 0.95)
 const C_WIRE := Color(0.5, 0.9, 0.6, 0.25)
+const C_BG := Color(0.22, 0.27, 0.3)    ## Oda arka planı: koyu tile'lardan ayrışsın
+
+## Odaların varsayılan tile stili (bkz. TileStyle). "" yaparsan her şey eskisi gibi düz renk olur.
+## Sadece varsayılan renkli (C_PLAT, C_WALL) platformlara uygulanır; buz, bant, tek yönlü gibi
+## rengiyle anlam taşıyanlar düz renkte kalır.
+const ROOM_STYLE := "green_valley"
+const FLOOR_DECOR := 0.2
 
 static var _current := 0   ## R ile sahne yeniden yüklense de aynı odada kal
 
@@ -89,6 +96,7 @@ func _ready() -> void:
 		add_child(r)
 		_build_shell(r, _rooms[i])
 		(_rooms[i]["build"] as Callable).call(r)
+		_mark_decor_skips(r)
 		_room_nodes.append(r)
 
 	_make_environment()
@@ -503,29 +511,23 @@ var _help_label: Label
 func _r_story(r: Node2D) -> void:
 	_story_room = _building
 	# Üç bölge: zemin ve arka plan rengiyle ayrılır
-	_zone(r, WALL, STORY_EARTH_END, Color(0.2, 0.28, 0.2), Color(0.36, 0.5, 0.3))
-	_zone(r, STORY_EARTH_END, STORY_MOUNTAIN_END, Color(0.2, 0.24, 0.32), Color(0.75, 0.8, 0.88))
-	_zone(r, STORY_MOUNTAIN_END, 2340, Color(0.32, 0.27, 0.36), Color(0.95, 0.88, 0.92))
+	_zone(r, WALL, STORY_EARTH_END, Color(0.27, 0.36, 0.38), "green_valley", 0.35)
+	_zone(r, STORY_EARTH_END, STORY_MOUNTAIN_END, Color(0.17, 0.2, 0.3), "winter", 0.3)
+	_zone_backdrop(r, STORY_EARTH_END, STORY_MOUNTAIN_END)
+	_zone(r, STORY_MOUNTAIN_END, 2340, Color(0.24, 0.22, 0.4), "heaven", 0.3)
 	_sign(r, Vector2(80, 300), "Part 1: Earth")
 	_sign(r, Vector2(STORY_EARTH_END + 40, 300), "Part 2: The Mountain")
 	_sign(r, Vector2(STORY_MOUNTAIN_END + 40, 300), "Part 3: The Clouds")
 
 	# --- Yeryüzü: Nine, yaşlı ağaç (dalında ip), kuyu (içinde çocuk) ---
 	_npc(r, 300, FLOOR_Y, "granny", PixelArt.NINE, PixelArt.NINE_PAL, StoryData.GRANNY)
-	var trunk := ColorRect.new()
-	trunk.position = Vector2(540, 380)
-	trunk.size = Vector2(24, 260)
-	trunk.color = Color(0.35, 0.24, 0.15)
-	trunk.z_index = -5
-	r.add_child(trunk)
-	var leaves := ColorRect.new()
-	leaves.position = Vector2(470, 300)
-	leaves.size = Vector2(170, 90)
-	leaves.color = Color(0.25, 0.42, 0.25)
-	leaves.z_index = -5
-	r.add_child(leaves)
-	_plat(r, 440, 590, 40, 50, {"color": Color(0.4, 0.3, 0.2)})          # kütük basamağı
-	_plat(r, 480, 470, 150, 16, {"color": Color(0.42, 0.3, 0.18)})       # dal
+	# Yaşlı ağaç: yosunlu gövde + Green Valley ağaç/çalı parçalarından taç
+	_tile_visual(r, Rect2(540, 380, 24, 260), "green_valley")
+	_decor_sprite(r, "green_valley", Rect2(352, 0, 32, 32), Vector2(552, 392))
+	_decor_sprite(r, "green_valley", Rect2(224, 0, 32, 32), Vector2(495, 410))
+	_decor_sprite(r, "green_valley", Rect2(384, 0, 32, 32), Vector2(610, 410))
+	_plat(r, 440, 590, 40, 50, {"style": "green_valley"})                # kütük basamağı
+	_plat(r, 480, 470, 150, 16, {"style": "green_valley"})               # dal
 	_pickup(r, 590, 470, "rope", PixelArt.ROPE, PixelArt.ROPE_PAL)
 	var well := PixelArt.sprite(PixelArt.KUYU, PixelArt.KUYU_PAL)
 	well.position = Vector2(720, FLOOR_Y)
@@ -537,7 +539,7 @@ func _r_story(r: Node2D) -> void:
 	# --- Dağ: Keşiş, üşüyen dağcı + sönük ateş, aşağıya saçılmış 3 odun ---
 	_npc(r, 900, FLOOR_Y, "monk", PixelArt.KESIS, PixelArt.KESIS_PAL, StoryData.MONK)
 	_pickup(r, 1040, FLOOR_Y, "wood", PixelArt.ODUN, PixelArt.ODUN_PAL)
-	_plat(r, 1120, 560, 120, 80, {"color": Color(0.55, 0.58, 0.65)})     # kaya
+	_plat(r, 1120, 560, 120, 80, {"style": "winter"})                    # kaya
 	_pickup(r, 1180, 560, "wood", PixelArt.ODUN, PixelArt.ODUN_PAL)
 	_pickup(r, 1540, FLOOR_Y, "wood", PixelArt.ODUN, PixelArt.ODUN_PAL)
 	var climber := _npc(r, 1340, FLOOR_Y, "climber", PixelArt.DAGCI, PixelArt.DAGCI_PAL, {})
@@ -547,24 +549,15 @@ func _r_story(r: Node2D) -> void:
 	r.add_child(_campfire)
 
 	# --- Bulutlar: kuş, kayıp ruh, Cennetin Kapısı ---
-	_plat(r, 1700, 580, 24, 60, {"color": Color(0.85, 0.78, 0.82)})      # kuşun direği
+	_plat(r, 1700, 580, 24, 60, {"style": "heaven"})                     # kuşun direği
 	_npc(r, 1712, 580, "bird", PixelArt.KUS, PixelArt.KUS_PAL, StoryData.BIRD, true)
 	var spirit := _npc(r, 1960, FLOOR_Y - 20, "spirit", PixelArt.RUH, PixelArt.RUH_PAL, {})
 	spirit.hop = true
 	_story_npcs["spirit"] = spirit
-	for x in [2200, 2300]:  # kapının altın sütunları
-		var pillar := ColorRect.new()
-		pillar.position = Vector2(x, 360)
-		pillar.size = Vector2(24, 280)
-		pillar.color = Color(0.95, 0.8, 0.4)
-		pillar.z_index = -5
-		r.add_child(pillar)
-	var arch := ColorRect.new()
-	arch.position = Vector2(2190, 340)
-	arch.size = Vector2(144, 24)
-	arch.color = Color(0.95, 0.8, 0.4)
-	arch.z_index = -5
-	r.add_child(arch)
+	# Cennetin Kapısı: bulut sütunlar ve altın çimli kemer (sadece görsel)
+	for x in [2196, 2298]:
+		_tile_visual(r, Rect2(x, 380, 40, 260), "heaven")
+	_tile_visual(r, Rect2(2180, 344, 172, 40), "heaven")
 	_sign(r, Vector2(2160, 300), "The Gate of Heaven")
 	_exit(r, 2262)
 
@@ -575,8 +568,36 @@ func _r_story(r: Node2D) -> void:
 	_story_npcs["climber"].shiver = true
 
 
-## Bir hikâye bölgesi: arka plan rengi + o bölgeye ait zemin
-func _zone(r: Node2D, x0: float, x1: float, bg: Color, ground: Color) -> void:
+## Çarpışmasız, sadece görsel tile bloğu (ağaç gövdesi, kapı sütunu...)
+func _tile_visual(r: Node2D, rect: Rect2, style: String) -> void:
+	var n := Node2D.new()
+	n.position = rect.position
+	n.z_index = -5
+	n.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	n.draw.connect(func() -> void: TileStyle.draw_block(n, rect.size, style))
+	r.add_child(n)
+	n.queue_redraw()
+
+
+## Stilin süs dokusundan tek bir parça; feet: alt orta noktası
+func _decor_sprite(r: Node2D, style: String, region: Rect2, feet: Vector2) -> void:
+	var st := TileStyle.resolve(style)
+	if st == "":
+		return
+	var def: Dictionary = TileStyle.STYLES[st]
+	var sp := Sprite2D.new()
+	sp.texture = load(def["decor_tex"] if def["decor_tex"] != "" else def["tex"])
+	sp.region_enabled = true
+	sp.region_rect = region
+	sp.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	sp.scale = Vector2.ONE * TileStyle.SCALE
+	sp.position = feet - Vector2(0, region.size.y * TileStyle.SCALE / 2.0)
+	sp.z_index = -4
+	r.add_child(sp)
+
+
+## Bir hikâye bölgesi: arka plan rengi + o bölgenin tile stiliyle zemin (ve üstünde süsler)
+func _zone(r: Node2D, x0: float, x1: float, bg: Color, style: String, decor: float) -> void:
 	var b := ColorRect.new()
 	b.position = Vector2(x0, WALL)
 	b.size = Vector2(x1 - x0, FLOOR_Y - WALL)
@@ -584,7 +605,27 @@ func _zone(r: Node2D, x0: float, x1: float, bg: Color, ground: Color) -> void:
 	b.z_index = -9
 	b.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	r.add_child(b)
-	_plat(r, x0, FLOOR_Y, x1 - x0, BOTTOM - FLOOR_Y, {"color": ground})
+	_plat(r, x0, FLOOR_Y, x1 - x0, BOTTOM - FLOOR_Y, {"style": style, "decor": decor})
+
+
+## Dağ bölgesinin arkasına Winter Tileset'in gökyüzü/dağ/orman katmanları (dosyalar yoksa atlanır)
+func _zone_backdrop(r: Node2D, x0: float, x1: float) -> void:
+	const BG_DIR := "res://assets/tilesets/winter/bg/"
+	var scale := TileStyle.SCALE
+	for layer: String in ["sky0", "mountains1", "forest2", "forest3"]:
+		var path: String = BG_DIR + layer + ".png"
+		if not ResourceLoader.exists(path):
+			return
+		var t := TextureRect.new()
+		t.texture = load(path)
+		t.stretch_mode = TextureRect.STRETCH_TILE
+		t.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		t.size = Vector2((x1 - x0) / scale, 180)
+		t.scale = Vector2.ONE * scale
+		t.position = Vector2(x0, FLOOR_Y - 180 * scale)  # alt kenar zemine otursun
+		t.z_index = -8
+		t.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		r.add_child(t)
 
 
 func _npc(r: Node2D, x: float, y: float, id: String, template: Array, palette: Dictionary,
@@ -776,15 +817,40 @@ func _build_shell(r: Node2D, def: Dictionary) -> void:
 	var bg := ColorRect.new()
 	bg.position = Vector2(0, top)
 	bg.size = Vector2(w, h)
-	bg.color = Color(0.16, 0.17, 0.22)
+	bg.color = C_BG
 	bg.z_index = -10
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	r.add_child(bg)
-	_plat(r, 0, top, WALL, h, {"color": C_WALL})
-	_plat(r, w - WALL, top, WALL, h, {"color": C_WALL})
-	_plat(r, 0, top, w, WALL, {"color": C_WALL})
+	_plat(r, 0, top, WALL, h, {"color": C_WALL, "fill_only": true})
+	_plat(r, w - WALL, top, WALL, h, {"color": C_WALL, "fill_only": true})
+	_plat(r, 0, top, w, WALL, {"color": C_WALL, "fill_only": true})
 	for seg: Array in def["floor"]:
-		_plat(r, seg[0], FLOOR_Y, seg[1] - seg[0], BOTTOM - FLOOR_Y)
+		_plat(r, seg[0], FLOOR_Y, seg[1] - seg[0], BOTTOM - FLOOR_Y, {"decor": FLOOR_DECOR})
+
+
+## Zemindeki oyun nesnelerinin (plaka, yastık, diken, kapı, NPC, kutu...) çevresine süs konmasın.
+## Süs sadece görsel; oyuncunun basacağı/bakacağı şeyi kapatmamalı.
+func _mark_decor_skips(r: Node2D) -> void:
+	const MARGIN := 50.0
+	var floors := r.get_children().filter(func(c: Node) -> bool: return c.get("decor") != null and c.decor > 0.0)
+	for f: Node2D in floors:
+		var skips := []
+		for c in r.get_children():
+			if c == f or not (c is Area2D or c is CharacterBody2D or c is AnimatableBody2D \
+					or c.get("channels") != null or c is StaticBody2D and c.get("decor") == null):
+				continue
+			# Bu zeminin üst yüzeyine yakın duran nesneler (üstünde 200 px'e kadar)
+			var cy: float = c.position.y
+			if cy < f.position.y - 200.0 or cy > f.position.y + 40.0:
+				continue
+			var w := 40.0
+			if c.get("size") is Vector2:
+				w = c.size.x
+			var x0: float = c.position.x - f.position.x
+			# Çoğu nesnenin orijini ortada; boyutlu olanlarınki sol üstte
+			var left := x0 if c.get("size") is Vector2 else x0 - w / 2.0
+			skips.append([left - MARGIN, left + w + MARGIN])
+		f.decor_skip = skips
 
 
 ## Varsayılan tam zeminde bir çukur açmak yerine, zemini baştan bölmek daha basit;
@@ -806,6 +872,9 @@ func _plat(r: Node2D, x: float, y: float, w: float, h: float, extra := {}) -> No
 	p.color = C_PLAT
 	for k: String in extra:
 		p.set(k, extra[k])
+	# Varsayılan renkli platformlar oda stiliyle tile'lanır (stil açıkça verilmediyse)
+	if not extra.has("style") and p.color in [C_PLAT, C_WALL] and not p.one_way:
+		p.style = ROOM_STYLE
 	r.add_child(p)
 	return p
 

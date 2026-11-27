@@ -48,6 +48,7 @@ func add_accessory(id: String, rows: Array, palette: Dictionary, col: int, row: 
 	acc.name = id
 	acc.texture = PixelArt.texture(rows, palette)
 	acc.centered = false
+	# Her iki dokuda da 1 piksel kontur payı var; birbirini götürür, col/row şablona göre kalır
 	var tex_size := _sprite.texture.get_size()
 	acc.position = _sprite.offset - tex_size / 2.0 + Vector2(col, row)
 	_sprite.add_child(acc)

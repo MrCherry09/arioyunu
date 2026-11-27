@@ -1,0 +1,16 @@
+Winter Tileset 16x16 - pokrasmemas
+https://pokrasmemas.itch.io/wintertileset
+
+Sayfadaki lisans (özet):
+- Kişisel ve ticari projelerde kullanılabilir.
+- Kendi ihtiyacına göre değiştirilebilir.
+- İsim vermek rica ediliyor (attribution is appreciated).
+- Bu dosyalar başka platformlarda yeniden yüklenemez / dağıtılamaz.
+
+Bu yüzden bu klasör .gitignore ile git'ten hariç tutuluyor (repo herkese açık).
+Ekip üyeleri dosyaları yukarıdaki sayfadan kendileri indirip bu klasöre koymalı:
+  winter_tileset.png      <- winterTileset/Tileset/winterTileset.png
+  winter_environment.png  <- winterTileset/winterEnvironment/winterEnvironment.png
+  winter_items.png        <- winterTileset/winterItems/winterItems.png
+  bg/sky0.png, bg/mountains1.png, bg/forest2.png, bg/forest3.png <- winterTileset/BG320x180/
+Dosyalar yoksa oyun otomatik olarak Green Valley'nin karlı renk sürümünü kullanır.

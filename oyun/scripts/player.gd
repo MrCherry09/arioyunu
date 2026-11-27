@@ -92,7 +92,9 @@ var input_locked := false
 ## Hikâye eşyaları: {"rope": 1, "wood": 3}
 var items: Dictionary = {}
 
-@onready var _visual: ColorRect = $Visual
+@onready var _visual: ColorRect = $Visual  ## Eski renkli kutu: gizli, sprite yoksa yedek
+var _sprite: Sprite2D
+var _frames := {}
 @onready var _col: CollisionShape2D = $Shape
 var _shape: RectangleShape2D
 
@@ -100,6 +102,7 @@ var _shape: RectangleShape2D
 func _ready() -> void:
 	GameInput.setup()
 	_spawn = global_position
+	_make_sprite()
 	# Kayarken boyutu değiştireceğiz; sahnedeki paylaşılan şekli bozmamak için kopyala
 	_shape = (_col.shape as RectangleShape2D).duplicate()
 	_col.shape = _shape
@@ -312,7 +315,7 @@ func _physics_process(delta: float) -> void:
 
 
 func _finish_move(color: Color) -> void:
-	_visual.color = color
+	_update_sprite(color)
 	move_and_slide()
 
 	_floor_body = null
@@ -336,6 +339,38 @@ func _finish_move(color: Color) -> void:
 
 	if global_position.y > fall_limit:
 		die()
+
+
+# --- Görünüm (piksel art yolcu) ---
+
+func _make_sprite() -> void:
+	for key: String in ["idle", "walk1", "walk2", "jump", "slide"]:
+		var rows: Array = {
+			"idle": PixelArt.PLAYER_IDLE, "walk1": PixelArt.PLAYER_WALK_1, "walk2": PixelArt.PLAYER_WALK_2,
+			"jump": PixelArt.PLAYER_JUMP, "slide": PixelArt.PLAYER_SLIDE,
+		}[key]
+		_frames[key] = PixelArt.texture(rows, PixelArt.PLAYER_PAL)
+	_sprite = PixelArt.sprite(PixelArt.PLAYER_IDLE, PixelArt.PLAYER_PAL)
+	_sprite.position = Vector2(0, STAND_SIZE.y / 2.0)  # ayaklar çarpışma kutusunun altında
+	add_child(_sprite)
+	_visual.hide()
+
+
+## Duruma göre kare seç; özel durumlar (dash, çakılma, süzülme...) hafif renk tonu olarak görünür
+func _update_sprite(state_color: Color) -> void:
+	_visual.color = state_color
+	if _sprite == null:
+		return
+	var key := "idle"
+	if _sliding:
+		key = "slide"
+	elif not is_on_floor():
+		key = "jump"
+	elif absf(velocity.x) > 30.0:
+		key = "walk1" if (Time.get_ticks_msec() / 130) % 2 == 0 else "walk2"
+	_sprite.texture = _frames[key]
+	_sprite.flip_h = _facing < 0.0
+	_sprite.modulate = Color.WHITE if state_color == COLOR_NORMAL else Color.WHITE.lerp(state_color, 0.55)
 
 
 func _wind_force() -> Vector2:
