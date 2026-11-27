@@ -64,6 +64,11 @@ func _ready() -> void:
 	angel = Angel.new()
 	angel.player = player
 	add_child(angel)
+	# Önceki levellerde kazanılan yardım ödülleri meleğin üstünde kalsın
+	if story().get("child", "") == "helped":
+		angel.add_accessory("crown", PixelArt.TAC, PixelArt.TAC_PAL, 3, 3)
+	if story().get("climber", "") == "helped":
+		angel.add_accessory("lantern", PixelArt.FENER, PixelArt.FENER_PAL, 10, 10)
 
 	dialogue = DialogueBox.new()
 	dialogue.player = player
@@ -94,6 +99,8 @@ func _ready() -> void:
 
 	_setup()
 	await get_tree().process_frame
+	if not is_inside_tree():
+		return  # o arada sahne değiştiyse (ör. debug tuşuyla başka level'a geçildi)
 	cam.reset_smoothing()
 	_start()
 
@@ -138,6 +145,12 @@ func story() -> Dictionary:
 
 ## Quest ödülü: verilen yerde bir ışık topu belirir (toplanınca meleği iyileştirir)
 func reward_orb(pos: Vector2, heal := 10.0) -> void:
+	# Fizik sinyali içinden (ör. bölgeye girildi) çağrılabilir: yeni fizik alanı o an eklenemez,
+	# bir sonraki kareye ertele
+	_spawn_reward_orb.call_deferred(pos, heal)
+
+
+func _spawn_reward_orb(pos: Vector2, heal: float) -> void:
 	var o: Area2D = load("res://scripts/elements/light_orb.gd").new()
 	o.heal_amount = heal
 	o.radius = 14.0 if heal <= 10.0 else 20.0

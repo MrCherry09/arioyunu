@@ -22,7 +22,8 @@ var _start: Vector2
 
 func _ready() -> void:
 	add_to_group("critters")
-	collision_layer = 0
+	# Kendi katmanında (3. bit = 4): tetik bölgeleri (ör. ağıl) onu görebilsin, oyuncu çarpmasın
+	collision_layer = 4
 	collision_mask = 1 | 2   # zemin + tek yönlü platformlar
 	_start = position
 	var lk := PixelArt.look(look)
@@ -52,8 +53,11 @@ func _physics_process(delta: float) -> void:
 	_t += delta
 	if player == null:
 		player = get_tree().get_first_node_in_group("player") as Player
+		if player:
+			# Oyuncunun gövdesine takılmasın (yere basamayıp hızlanır, zeminden geçebilirdi)
+			add_collision_exception_with(player)
 	if not is_on_floor():
-		velocity.y += gravity * delta
+		velocity.y = minf(velocity.y + gravity * delta, 1200.0)
 	match mode:
 		"flee":
 			_flee()

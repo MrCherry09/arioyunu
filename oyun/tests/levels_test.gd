@@ -101,7 +101,19 @@ func open_level(path: String) -> void:
 	await frames(5)
 
 
+## Diyalog/QTE kapansın ve oyuncunun kilidi kalksın (diyalog kapanınca ~0.15 sn kilitli kalır)
+func idle() -> void:
+	if lv and lv.dialogue.active:
+		await finish()
+	for i in 120:
+		if not p.input_locked and not DialogueBox.ui_busy(self):
+			break
+		await frames(1)
+	await frames(2)
+
+
 func put_at(pos: Vector2) -> void:
+	await idle()
 	p.global_position = pos
 	p.velocity = Vector2.ZERO
 	p.reset_physics_interpolation()
@@ -147,8 +159,9 @@ func _prepare(tech: String) -> void:
 		await frames(30)
 
 
+## Hedef çıkıntıya varıldı mı: aynı yükseklikte ve hedefin 1.5 tile yakınında, ayakta
 func _arrived(target: Vector2) -> bool:
-	return p.is_on_floor() and absf(p.global_position.x - target.x) < 40.0 \
+	return p.is_on_floor() and absf(p.global_position.x - target.x) < 72.0 \
 			and absf(p.global_position.y - target.y) < 30.0
 
 
@@ -157,12 +170,17 @@ func _arrived(target: Vector2) -> bool:
 func _go(target: Vector2, tech: String) -> bool:
 	var max_frames := 900 if tech in ["wall", "glide", "wind"] else 600
 	var jump_hold := 0
-	var wall_dir := 1.0
+	# Bacada önce hedefin ters yönündeki (kapalı) duvara git, oradan sekerek tırman
+	var wall_dir := -signf(target.x - p.global_position.x) if absf(target.x - p.global_position.x) > 1.0 else 1.0
 	var stuck := 0
 	var last_x := p.global_position.x
+	var start_x := p.global_position.x
 	for f in max_frames:
 		if lv.get("finished") == true:
 			return true
+		# Yol üstünde kendiliğinden açılan hikâye konuşmaları rota testini durdurmasın
+		if lv.dialogue.active:
+			lv.dialogue.stop()
 		if _arrived(target):
 			release_all()
 			await frames(10)
@@ -173,24 +191,46 @@ func _go(target: Vector2, tech: String) -> bool:
 		var dir := signf(dx) if absf(dx) > 12.0 else 0.0
 		var on_floor := p.is_on_floor()
 
+		# Bacadan dışarı kaydıysak (yerde, başladığımız yerden uzakta) geri dön
+		if tech == "wall" and on_floor and absf(pos.x - start_x) > 30.0:
+			_steer(signf(start_x - pos.x))
+			await frames(1)
+			continue
+		# Yastık: önce yakındaki yastığın üstüne yürü, fırlayınca hedefe yönel
+		if tech == "pad" and on_floor:
+			var pad := _nearest_pad(pos)
+			if pad != Vector2.INF:
+				dir = signf(pad.x - pos.x) if absf(pad.x - pos.x) > 8.0 else 0.0
+
 		if tech == "wall":
 			# İki duvar arasında: duvara yapışınca zıpla, karşı duvara yönel
 			if dy > -10.0 and absf(dx) > 12.0:
 				dir = signf(dx)  # tepeye çıktık: hedefe yürü
 			else:
 				if p.is_on_wall_only():
+					# Duvara doğru basılı tutarken zıpla (oyuncu gibi), yönü ancak sonra değiştir
+					var normal := signf(p.get_wall_normal().x)
+					_steer(-normal)
 					Input.action_release("jump")
 					await frames(1)
 					Input.action_press("jump")
+					await frames(1)
 					jump_hold = 12
-					wall_dir = signf(p.get_wall_normal().x)
-				elif on_floor:
+					wall_dir = normal
+				elif on_floor and jump_hold <= 0:
+					Input.action_release("jump")
+					await frames(1)
 					Input.action_press("jump")
 					jump_hold = 14
-				dir = wall_dir if not on_floor else (signf(dx) if absf(dx) > 12.0 else wall_dir)
+				# Yerden önce dik zıpla (alçakta yana gidilirse bacanın girişinden dışarı kayılır),
+				# yükselirken duvara yönel
+				dir = 0.0 if on_floor or (jump_hold > 6 and p.velocity.y < -200.0 and not p.is_on_wall()) \
+						else wall_dir
 		_steer(dir)
 
-		if tech != "wall":
+		if tech == "pad" and on_floor:
+			pass  # yastığa yürürken zıplama; yastık fırlatacak
+		elif tech != "wall":
 			if on_floor:
 				var blocked := p.is_on_wall()
 				var higher := dy < -20.0 and absf(dx) < 340.0
@@ -207,15 +247,16 @@ func _go(target: Vector2, tech: String) -> bool:
 					Input.action_press("jump")
 					jump_hold = 18
 				# Uzun boşlukta süzül (Space basılı); hedef çok aşağıdaysa bırak, düşsün
-				if jump_hold <= 0:
+				# Yükselirken yeni basış ikinci zıplama olur ve yastığın fırlatışını keser: sadece düşerken bas
+				if jump_hold <= 0 and p.velocity.y > 0.0:
 					if absf(dx) > 120.0 and dy < 200.0 or tech in ["glide", "wind"]:
 						Input.action_press("jump")
 					else:
 						Input.action_release("jump")
 		if jump_hold > 0:
 			jump_hold -= 1
-			if jump_hold == 0 and tech == "wall":
-				Input.action_release("jump")
+		# Bacada zıplama tuşu basılı kalır (gerçek oyuncu gibi): kısa basış zıplamayı yarıya indirir,
+		# basılı tutmak ise düşerken süzülmeyi sağlar
 		# Takılma tespiti: uzun süre ilerleme yoksa zıplamayı dene
 		if absf(p.global_position.x - last_x) < 1.0 and on_floor and dir != 0.0:
 			stuck += 1
@@ -226,9 +267,22 @@ func _go(target: Vector2, tech: String) -> bool:
 		else:
 			stuck = 0
 		last_x = p.global_position.x
+		if OS.get_environment("ROUTE_DEBUG") == tech and f % 10 == 0:
+			print("    [", f, "] ", lp_tiles().snapped(Vector2(0.1, 0.1)), " v=", p.velocity.round(), " zemin=",
+					on_floor, " duvar=", p.is_on_wall(), " dir=", dir, " hold=", jump_hold)
 		await frames(1)
 	release_all()
 	return _arrived(target)
+
+
+func _nearest_pad(pos: Vector2) -> Vector2:
+	var best := Vector2.INF
+	for n in lv.find_children("*", "Area2D", true, false):
+		if n.get("strength") != null and absf(n.global_position.y - pos.y) < 80.0:
+			var c: Vector2 = n.global_position + Vector2(40, 0)
+			if absf(c.x - pos.x) < 8 * TILE and (best == Vector2.INF or absf(c.x - pos.x) < absf(best.x - pos.x)):
+				best = c
+	return best
 
 
 func _steer(dir: float) -> void:
@@ -343,9 +397,14 @@ func choose(i: int) -> void:
 	await frames(3)
 
 
+## Diyaloğu kapat. Soru gelirse son seçeneği seç (sohbet menülerinde son seçenek "Goodbye" gibi çıkış).
 func finish() -> void:
+	var d: DialogueBox = lv.dialogue
 	var g := 0
-	while lv.dialogue.active and g < 80:
+	while d.active and g < 80:
+		if d._asking() and d._opts.visible:
+			for k in d._choices.size() - 1:
+				await tap("move_right")
 		await tap("interact")
 		g += 1
 	await frames(15)
@@ -409,15 +468,6 @@ func _quests_level_1() -> void:
 		await talk(s)
 		await finish()
 	check("L1: 2 taş okundu", q.quests["stones"]["count"] == 2, q.quests["stones"])
-	# 3. taş mahzende: çatlak zemini çakılarak kır
-	var lid: Node2D = lv.ent("CellarLid1")
-	await put_at(lid.global_position + Vector2(24, -120))
-	await tap("down")
-	await frames(40)
-	check("L1: çatlak zemin çakılarak kırıldı, mahzene inildi", lp_tiles().y > 19.0, lp_tiles())
-	await talk("Stone3")
-	await finish()
-	check("L1: 3 taş okundu, quest tamam", q.state("stones") == QuestLog.DONE)
 	# Kuzu: kovala, köşeye sıkıştır, çobana götür
 	var lamb: Node2D = lv.ent("Lamb")
 	await put_at(lamb.global_position + Vector2(-200, -25))
@@ -428,12 +478,19 @@ func _quests_level_1() -> void:
 		await frames(1)
 	release_all()
 	check("L1: kuzu çite sıkıştırılıp yakalandı", lamb.mode == "follow", lamb.global_position / TILE)
+	check("L1: kuzuyu yakalarken başka konuşma açılmadı", not lv.dialogue.active)
+	await idle()
 	# Çobanın ağılına yürü (çit üstünden zıplayarak)
 	var pen: Node2D = lv.ent("Pen")
 	var ok := await _go(pen.global_position + Vector2(pen.size.x / 2.0, pen.size.y - 25), "walk")
 	await frames(120)
 	check("L1: kuzu ağıla getirildi, quest tamam", q.state("lamb") == QuestLog.DONE,
 			[ok, lamb.mode, lamb.global_position / TILE])
+	# Köprü: önce değirmenciyle konuş
+	await talk("Miller")
+	await choose(0)
+	await finish()
+	check("L1: köprü questi başladı", q.is_active("bridge"), q.quests.get("bridge"))
 	# Köprü inmeden karşıya geçilememeli (rüzgar süzülmeyi ve nehir yatağından tırmanmayı engeller)
 	var far_bank := (lv.ent("Bridge") as Node2D).global_position + Vector2(16 * TILE, -25)
 	await put_at(Vector2(159.5 * TILE, 17 * TILE - 25))
@@ -442,11 +499,8 @@ func _quests_level_1() -> void:
 	await put_at(Vector2(166 * TILE, 21 * TILE - 25))
 	crossed = await _go(far_bank, "walk")
 	check("L1: nehir yatağından karşı kıyıya tırmanılamıyor", not crossed and lp_tiles().x < 174.0, lp_tiles())
-	# Köprü: değirmenciyle konuş, kütüğü it, geç
-	await talk("Miller")
-	await choose(0)
-	await finish()
-	check("L1: köprü questi başladı", q.is_active("bridge"))
+	check("L1: (bu denemeler sırasında oyuncu kilitli değildi)", not p.input_locked)
+	# Kütüğü plakaya it
 	var crate: Node2D = lv.ent("BridgeCrate")
 	await put_at(crate.global_position + Vector2(-90, 0))
 	Input.action_press("move_right")
@@ -461,22 +515,245 @@ func _quests_level_1() -> void:
 	await _go(far, "walk")
 	await frames(10)
 	check("L1: köprüden geçildi, quest tamam", q.state("bridge") == QuestLog.DONE, lp_tiles())
+	# 3. taş mahzende (nehrin ötesinde, köprüden sonra): çatlak zemini çakılarak kır
+	var lid: Node2D = lv.ent("CellarLid1")
+	await put_at(lid.global_position + Vector2(24, -140))
+	await frames(2)
+	await tap("down")
+	await frames(40)
+	check("L1: çatlak zemin çakılarak kırıldı, mahzene inildi", lp_tiles().y > 19.0, lp_tiles())
+	await talk("Stone3")
+	await finish()
+	check("L1: 3 taş okundu, quest tamam", q.state("stones") == QuestLog.DONE)
 	# Çıkışta: çocuk kurtarıldığı için çocuk görünür, köylü kadın görünmez
 	check("L1: çıkışta kurtarılan çocuk var, iz yok", lv.ent("ChildAtExit").visible and not lv.ent("FarmerAtExit").visible)
-	check("L1: ışık topları meleği iyileştirdi", lv.light_got > 0.0, lv.light_got)
+	check("L1: quest ödülü ışık topları belirdi", lv.light_total > 125.0, lv.light_total)
 
 
 func _quests_level_2() -> void:
-	pass  # Level 2 eklenince doldurulacak
+	var flow: Node = root.get_node("GameFlow")
+	flow.story["climber"] = ""
+	await open_level(LEVELS[1])
+	var q: QuestLog = lv.quests
+	check("L2: ana quest başladı", q.is_active("main"))
+	# Dağcı: kabul -> 3 odun -> ateş
+	await talk("Climber")
+	await choose(0)
+	await finish()
+	check("L2: dağcı questi başladı", q.is_active("climber") and flow.story["climber"] == "accepted")
+	for w in ["Wood1", "Wood2", "Wood3"]:
+		var wn: Node2D = lv.ent(w)
+		await put_at(wn.global_position + Vector2(0, -25))
+		await frames(10)
+		check("L2: %s alınırken dağcı seçimi kesinleşmedi" % w, flow.story["climber"] == "accepted", flow.story["climber"])
+	check("L2: 3 odun toplandı", p.items.get("wood", 0) == 3 and q.quests["climber"]["count"] == 3, p.items)
+	await talk("Climber")
+	await choose(0)    # "Light the fire."
+	await finish()
+	check("L2: ateş yandı, dağcı kurtarıldı", q.state("climber") == QuestLog.DONE and flow.story["climber"] == "helped")
+	# Madenci: dash ile kayaları kır
+	await put_at(Vector2(34.5 * TILE, 62 * TILE - 25))
+	check("L2: madenci questi mağara ağzında başladı", q.is_active("miner"), q.quests.keys())
+	await idle()
+	Input.action_press("move_right")
+	await frames(6)
+	await tap("dash")
+	await frames(30)
+	release_all()
+	check("L2: kayalar dash ile kırıldı, madenci serbest", lv._miner_freed and lv.ent("Rockfall0")._broken,
+			[lp_tiles(), lv._miner_freed, lv.ent("Rockfall2")._broken])
+	await talk("Miner")
+	await finish()
+	check("L2: madenci teşekkür etti, quest tamam", q.state("miner") == QuestLog.DONE)
+	# Keşiş -> çanlar
+	await talk("Monk")
+	await choose(2)    # "Can I help with anything?"
+	await finish()
+	check("L2: çan questi başladı", q.is_active("bells"), q.quests.keys())
+	check("L2: tapınak kapısı başta kapalı", not lv.ent("ShrineDoor")._open)
+	for b in ["Bell1", "Bell2", "Bell3"]:
+		await talk(b)
+		await finish()
+	await frames(30)
+	check("L2: 3 çan çalındı, quest tamam", q.state("bells") == QuestLog.DONE, q.quests.get("bells"))
+	check("L2: tapınak kapısı açıldı", lv.ent("ShrineDoor")._open)
+	# Düşüp yeniden doğunca kapı açık kalmalı (çanlar tekrar çalınmaz)
+	var back_pos := p.global_position
+	p.respawned.emit()
+	await frames(10)
+	check("L2: yeniden doğunca tapınak kapısı açık kalıyor", lv.ent("ShrineDoor")._open)
+	await put_at(back_pos)
+	# Zirve
+	await put_at(Vector2(31 * TILE, 12 * TILE - 25))
+	await frames(10)
+	check("L2: zirvede hedef merdivene döndü", "Stairway" in q.quests["main"]["objective"], q.quests["main"])
+	await talk("ShrineStone")
+	await finish()
+	check("L2: (taş okunduktan sonra diyalog kapalı)", not lv.dialogue.active)
+	# Dağcıya yardım etmeden yukarı çıkılırsa seçim kesinleşir
+	flow.story["climber"] = ""
+	await open_level(LEVELS[1])
+	await put_at(Vector2(6 * TILE, 52 * TILE - 25))
+	await frames(10)
+	check("L2: dağcıyı geçip yukarı çıkınca 'skipped'", flow.story["climber"] == "skipped", flow.story["climber"])
+	check("L2: melek geride bırakma repliğini söyledi", lv.dialogue.active)
+	await idle()
 
 
 func _quests_level_3() -> void:
-	pass  # Level 3 eklenince doldurulacak
+	var flow: Node = root.get_node("GameFlow")
+	# Önce ruha yardım etmeden kapı adasına geçme
+	flow.story["spirit"] = ""
+	await open_level(LEVELS[2])
+	await put_at(Vector2(203 * TILE, 24 * TILE - 25))
+	await frames(10)
+	check("L3: ruhu geçip kapı adasına varınca 'skipped'", flow.story["spirit"] == "skipped", flow.story["spirit"])
+	await idle()
+	flow.story["spirit"] = ""
+	await open_level(LEVELS[2])
+	var q: QuestLog = lv.quests
+	check("L3: ana quest başladı", q.is_active("main"))
+	# Kuş -> yavrular
+	await talk("Bird")
+	await choose(0)    # "You look worried."
+	await finish()
+	check("L3: yavru questi başladı", q.is_active("chicks"), q.quests.keys())
+	for c in ["Chick1", "Chick2"]:
+		var cn: Node2D = lv.ent(c)
+		await put_at(cn.global_position + Vector2(0, -25))
+		await frames(10)
+	check("L3: 2 yavru peşimizde", lv._chicks.size() == 2, lv._chicks.size())
+	var nest: Node2D = lv.ent("NestZone")
+	await put_at(nest.global_position + Vector2(100, 4 * TILE - 25))
+	await frames(10)
+	check("L3: 2 yavru yuvaya bırakıldı", lv._delivered == 2 and lv._chicks.is_empty(), lv._delivered)
+	# 3. yavru: yuvanın yanındaki yastıkla yukarı
+	await put_at(Vector2(155.6 * TILE, 22 * TILE - 25))
+	var c3: Node2D = lv.ent("Chick3")
+	var got := false
+	for i in 300:
+		if lv._chicks.size() == 1:
+			got = true
+			break
+		if p.global_position.y < 12.4 * TILE:
+			_steer(-1)  # adanın üst hizasını geçince sola
+		await frames(1)
+	release_all()
+	check("L3: 3. yavruya yastıkla ulaşıldı", got, [lp_tiles(), c3.global_position / TILE])
+	await put_at(nest.global_position + Vector2(100, 4 * TILE - 25))
+	await frames(20)
+	check("L3: 3 yavru yuvada, quest tamam", q.state("chicks") == QuestLog.DONE, lv._delivered)
+	await idle()
+	# Fenerler: çan çalmadan yanmaz
+	await talk("Lantern1")
+	await finish()
+	check("L3: çan çalmadan fener yanmıyor", not q.has("lanterns") and lv.ent("Lantern1").look == "lantern")
+	await talk("SkyBell")
+	await finish()
+	check("L3: çan çaldı, süre başladı", q.is_active("lanterns") and lv._lantern_time > 0.0)
+	await talk("Lantern1")
+	await finish()
+	check("L3: ilk fener yandı", lv.ent("Lantern1").look == "lantern_on" and q.quests["lanterns"]["count"] == 1)
+	lv._lantern_time = 0.05
+	await frames(10)
+	check("L3: süre bitince fenerler söndü", lv._lit.is_empty() and lv.ent("Lantern1").look == "lantern"
+			and "Ring" in q.quests["lanterns"]["objective"], q.quests["lanterns"])
+	await talk("SkyBell")
+	await finish()
+	for l in ["Lantern1", "Lantern2", "Lantern3", "Lantern4"]:
+		await talk(l)
+		await finish()
+	check("L3: 4 fener süre bitmeden yandı, quest tamam", q.state("lanterns") == QuestLog.DONE, q.quests["lanterns"])
+	# Ruh: kabul et, kapıya götür
+	await talk("Spirit")
+	await choose(0)    # "Come with me."
+	await finish()
+	check("L3: ruh peşimizde", flow.story["spirit"] == "accepted" and lv._spirit_follower != null
+			and q.is_active("spirit"))
+	await put_at(Vector2(214 * TILE, 26 * TILE - 25))
+	await frames(150)
+	check("L3: ruh kapı adasına kadar geldi", lv._spirit_follower.global_position.distance_to(p.global_position) < 300.0)
+	# Kapıya yürü (rota botu konuşmaları kapattığı için burada düz yürünür)
+	Input.action_press("move_right")
+	var ok := false
+	for i in 600:
+		ok = ok or p.global_position.x > 221 * TILE
+		if lv.dialogue.active:
+			await finish()
+		if lv.finished:
+			break
+		await frames(1)
+	release_all()
+	check("L3: kapıya varıldı, ruh yükseldi", flow.story["spirit"] == "helped" and q.state("spirit") == QuestLog.DONE, ok)
+	check("L3: ana quest tamam, 'To be continued'", q.state("main") == QuestLog.DONE and lv.hud._center.visible
+			and "continued" in lv.hud._center.text)
+	for i in 600:
+		if current_scene and current_scene.scene_file_path == "res://scenes/ui/main_menu.tscn":
+			break
+		await process_frame
+	check("L3: kapıdan sonra ana menüye dönüldü (sonrası yok)",
+			current_scene.scene_file_path == "res://scenes/ui/main_menu.tscn", current_scene.scene_file_path)
 
 
 # =====================================================================
 # Geçişler
 # =====================================================================
 
+func _wait_scene(path: String, max_frames := 900) -> bool:
+	for i in max_frames:
+		if current_scene and current_scene.scene_file_path == path:
+			return true
+		await process_frame
+	return current_scene != null and current_scene.scene_file_path == path
+
+
 func _test_transitions() -> void:
-	pass  # Leveller tamamlanınca doldurulacak
+	var flow: Node = root.get_node("GameFlow")
+	GameInput.setup()
+	flow.start_new_game()
+	for i in 60:
+		if current_scene:
+			break
+		await process_frame
+	check("yeni oyun: yükleme ekranı", current_scene.scene_file_path == flow.LOADING_SCENE, current_scene.scene_file_path)
+	check("yeni oyun: Level 1", await _wait_scene(LEVELS[0]))
+	await frames(20)
+	current_scene.complete()
+	await frames(5)
+	check("Level 1 bitti -> cutscene", current_scene.scene_file_path == flow.CUTSCENE_SCENE, current_scene.scene_file_path)
+	check("yardım edilmeyen çocuk 'skipped' olarak kaydedildi", flow.story.get("child") == "skipped", flow.story)
+	await frames(60)
+	# Atla (Esc / Start): gerçek bir tuş olayı gönder
+	var esc := InputEventKey.new()
+	esc.physical_keycode = KEY_ESCAPE
+	esc.keycode = KEY_ESCAPE
+	esc.pressed = true
+	Input.parse_input_event(esc)
+	await frames(2)
+	esc = esc.duplicate()
+	esc.pressed = false
+	Input.parse_input_event(esc)
+	check("cutscene atlanınca yükleme -> Level 2", await _wait_scene(LEVELS[1]))
+	await frames(20)
+	current_scene.complete()
+	await frames(5)
+	check("Level 2 bitti -> cutscene", current_scene.scene_file_path == flow.CUTSCENE_SCENE)
+	# Bu sefer atlamadan sonuna kadar izle (konuşmaları oyuncu gibi ilerlet)
+	var reached := false
+	for i in 60 * 60:
+		if current_scene and current_scene.scene_file_path == LEVELS[2]:
+			reached = true
+			break
+		var dlg = current_scene.get("dialogue") if current_scene else null
+		if current_scene and current_scene.scene_file_path == flow.CUTSCENE_SCENE and dlg and dlg.active:
+			await tap("interact", 3)
+			await frames(10)
+		else:
+			await process_frame
+	check("cutscene sonuna kadar oynayıp Level 3'e geçti", reached)
+	await frames(20)
+	check("dağcı 'skipped' olarak kaydedildi", flow.story.get("climber") == "skipped", flow.story)
+	current_scene.complete()
+	await frames(30)
+	check("son level complete(): başka bir yere gitmiyor (Gate sonrası yok)",
+			current_scene.scene_file_path == LEVELS[2], current_scene.scene_file_path)

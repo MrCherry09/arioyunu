@@ -161,7 +161,7 @@ func toast(text: String) -> void:
 
 
 func _next_toast() -> void:
-	if _toasts.is_empty():
+	if _toasts.is_empty() or not is_inside_tree():
 		_toast_busy = false
 		return
 	_toast_busy = true

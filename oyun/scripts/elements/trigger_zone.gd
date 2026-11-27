@@ -11,6 +11,7 @@ signal entered(body: Node2D)
 
 func _ready() -> void:
 	collision_layer = 0
+	collision_mask = 1 | 4   # oyuncu (1) ve hayvanlar (4, bkz. critter.gd)
 	monitoring = true
 	var shape := RectangleShape2D.new()
 	shape.size = size

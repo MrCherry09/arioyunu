@@ -55,6 +55,14 @@ func pad(button: JoyButton) -> void:
 	await frames(3)
 
 
+func _wait_scene(path: String) -> void:
+	for i in 600:
+		if current_scene and current_scene.scene_file_path == path:
+			break
+		await process_frame
+	await frames(5)
+
+
 func focused() -> Control:
 	return root.gui_get_focus_owner()
 
@@ -100,14 +108,14 @@ func _run() -> void:
 		await pad(JOY_BUTTON_DPAD_UP)
 	check("kol D-pad ile Play seçildi", focused() is Button and focused().text == "Play", focused())
 	await pad(JOY_BUTTON_A)
-	await frames(15)
-	check("kol A ile oyun başladı (test odaları)", current_scene != null \
-			and current_scene.scene_file_path == "res://scenes/test_rooms.tscn", current_scene)
+	await _wait_scene("res://scenes/levels/level_1_forest.tscn")
+	check("kol A ile oyun başladı (yükleme -> Level 1)", current_scene != null \
+			and current_scene.scene_file_path == "res://scenes/levels/level_1_forest.tscn", current_scene)
 
 	print("== Duraklatma")
 	var m := current_scene
 	await frames(10)
-	m._dialogue.stop()
+	m.dialogue.stop()
 	var pm := _pause_menu()
 	check("pause menüsü sahnede", pm != null)
 	await key(KEY_ESCAPE)
@@ -130,7 +138,12 @@ func _run() -> void:
 	await frames(3)
 	check("Resume ile oyun devam", not paused)
 
-	print("== Oyun içi HUD ve ayarlar")
+	print("== Oyun içi HUD ve ayarlar (test odaları, gizli debug yoluyla)")
+	root.get_node("GameFlow").load_scene("res://scenes/test_rooms.tscn", "Test rooms")
+	await _wait_scene("res://scenes/test_rooms.tscn")
+	m = current_scene
+	await frames(10)
+	m._dialogue.stop()
 	var feather_room := -1
 	for i in m._rooms.size():
 		if m._rooms[i]["title"] == "Collect the Feathers":
